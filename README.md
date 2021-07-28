@@ -9,4 +9,4 @@ A bit of fun in PyGame - get the sprite through the blizzard!
 ![Blizzered%20Lose](https://github.com/CZboop/Blizzered-Game/blob/main/Blizzered%20Lose.gif)
 
 
-A big thank you to Aezur on OpenGameArt.org for the running animation.
+A big thank you to Aezur on OpenGameArt.org for the running animation, and Q_x on OpenGameArt.org for the stew art.
