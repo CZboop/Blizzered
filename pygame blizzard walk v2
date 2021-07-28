@@ -1,0 +1,223 @@
+import pygame, random, sys, math
+import numpy as np
+
+#initialising fonts
+pygame.font.init()
+
+#window setup
+WIDTH, HEIGHT = 800, 350
+WIN = pygame.display.set_mode((WIDTH,HEIGHT))
+pygame.display.set_caption("Blizzered")
+FPS = 60
+
+#setting up colours as variables
+LIGHT_BLURP = (150,150,250)
+GREEN = (100,230,100)
+ICY_WHITE = (200,200,250)
+DARK_BLURP = (80,50,250)
+RED = (200,100,100)
+BLACK = (40,10,10)
+BLUE_BLK = (30,20,120)
+
+#loading fonts
+SML_FONT = pygame.font.SysFont("Impact",20)
+LRG_FONT = pygame.font.SysFont("Impact",60)
+HUGE_FONT = pygame.font.SysFont("Impact",120)
+
+#loading and prepping/resizing images for the sprite's run animation
+sprite_size = 100
+sprite_ani = [pygame.transform.scale(pygame.image.load("run0.png"),(sprite_size,sprite_size)),pygame.transform.scale(pygame.image.load("run1.png"),(sprite_size,sprite_size)),
+pygame.transform.scale(pygame.image.load("run2.png"),(sprite_size,sprite_size)),pygame.transform.scale(pygame.image.load("run3.png"),(sprite_size,sprite_size)),
+pygame.transform.scale(pygame.image.load("run4.png"),(sprite_size,sprite_size)),pygame.transform.scale(pygame.image.load("run5.png"),(sprite_size,sprite_size)),
+pygame.transform.scale(pygame.image.load("run6.png"),(sprite_size,sprite_size)),pygame.transform.scale(pygame.image.load("run7.png"),(sprite_size,sprite_size))]
+
+#setting the sprite's initial location and making a rect collision object in the same location
+sprite_at = [50,150]
+sprite_rect = pygame.Rect(sprite_at[0],sprite_at[1],sprite_size,sprite_size)
+
+#counter for tracking where in the animation loop the sprite is and setting pace for some other actions
+ani_count = 0
+
+#loading an image to show when the game is complete
+soup = pygame.transform.scale(pygame.image.load("stew.png"),(WIDTH,HEIGHT))
+
+#initial snowfall, creating lots of small rectangles above frame which will then drop into it
+snow = []
+for i in range(40):
+    snow.append(pygame.Rect(random.uniform(0,WIDTH*2),random.uniform(-400,0),5,5))
+
+#game over screen, with two states based on whether the sprite made it to the end (win) or was dragged behind the start (lose)
+def game_over(state):
+    #showing some hot soup and congratulations message for a win
+    if state =="win":
+        win = True
+        while win:
+            WIN.fill(RED)
+            WIN.blit(soup,(0,0))
+            message_big = LRG_FONT.render("YOU DID IT!",1,BLACK)
+            WIN.blit(message_big,((WIDTH-message_big.get_width())/2,10))
+            message_sml = SML_FONT.render("HE MADE IT HOME",1,BLACK)
+            WIN.blit(message_sml,((WIDTH-message_sml.get_width())/2,80))
+            pygame.display.update()
+            for event in pygame.event.get():
+                if event.type==pygame.QUIT:
+                    sys.exit()
+                    pygame.quit()
+    #showing a game over message for a loss
+    if state=="lose":
+        over = True
+        while over:
+            WIN.fill(ICY_WHITE)
+            message_big = HUGE_FONT.render("GAME OVER",1,BLUE_BLK)
+            WIN.blit(message_big,((WIDTH-message_big.get_width())/2,30))
+            message_sml = LRG_FONT.render("YOU GOT BLIZZERED",1,BLUE_BLK)
+            WIN.blit(message_sml,((WIDTH-message_sml.get_width())/2,210))
+            pygame.display.update()
+            for event in pygame.event.get():
+                if event.type==pygame.QUIT:
+                    sys.exit()
+                    pygame.quit()
+
+#game function
+def game(state):
+    global ani_count
+    global sprite_at
+
+    #the initial animated splash screen
+    if state=="start":
+        run = True
+        while run:
+            #drawing the static parts - background and icy floor
+            WIN.fill(LIGHT_BLURP)
+            pygame.draw.rect(WIN,ICY_WHITE, (0,sprite_at[1]+sprite_size-10,WIDTH,20))
+
+            #making the snow fall
+            for i in snow:
+                #adding more snow off screen if there's up to 250 active flakes
+                if len(snow)<=250:
+                    snow.append(pygame.Rect(random.uniform(0,WIDTH*2),random.uniform(-400,0),5,5))
+
+                #drawing each flake
+                pygame.draw.rect(WIN,ICY_WHITE,i)
+
+                #removing the snowflake if it drops onto the ground, and replacing it with one in the sky offscreen
+                if i.y>=sprite_at[1]+sprite_size-10:
+                    snow.remove(i)
+                    snow.append(pygame.Rect(random.uniform(0,WIDTH*2),random.uniform(-400,0),5,5))
+
+            #pacing the snow movement
+            if ani_count%20==0:
+                #moving the snow down along the y axis
+                for i in snow:
+                    i.y+=random.uniform(0,3)
+            #pacing snow movement
+            if ani_count%20==0:
+                #moving the snow back along the x axis
+                for i in snow:
+                    i.x-=random.uniform(0,5)
+
+            #displaying the sprite in the correct part of the animation and location
+            WIN.blit(sprite_ani[ani_count//100],(sprite_at[0],sprite_at[1]))
+
+            #incrementing the counter
+            ani_count+=1
+
+            #resetting the counter at a number that will keep everything smooth
+            if ani_count>=799:
+                ani_count = 0
+
+            #adding the title
+            title = LRG_FONT.render("... BLIZZERED ...", 1, DARK_BLURP)
+            WIN.blit(title,((WIDTH-title.get_width())/2, 10))
+
+            #adding subtitle/instructions
+            subtitle = SML_FONT.render("MASH SPACE AND GET HIM HOME",1,DARK_BLURP)
+            WIN.blit(subtitle,((WIDTH-subtitle.get_width())/2, 80))
+
+            #updating display for every run of the while loop
+            pygame.display.update()
+
+            #handling the events
+            for event in pygame.event.get():
+                #quitting if exit button clicked
+                if event.type==pygame.QUIT:
+                    sys.exit()
+                    pygame.quit()
+
+                #starting the game if space pressed
+                if event.type==pygame.KEYDOWN:
+                    if event.key==pygame.K_SPACE:
+                        game("play")
+    #game mode
+    if state=="play":
+        run = True
+        while run:
+            #drawing the static background and floor
+            WIN.fill(LIGHT_BLURP)
+            pygame.draw.rect(WIN,ICY_WHITE, (0,sprite_at[1]+sprite_size-10,WIDTH,20))
+
+            #snowfall
+            for i in snow:
+                #making more snow if not enough active flakes
+                if len(snow)<=250:
+                    snow.append(pygame.Rect(random.uniform(0,WIDTH*2),random.uniform(-400,0),5,5))
+
+                #drawing each flake
+                pygame.draw.rect(WIN,ICY_WHITE,i)
+
+                #removing flakes once they drop onto the ground level, replacing them with fresh ones above the viewable window
+                if i.y>=sprite_at[1]+sprite_size-10:
+                    snow.remove(i)
+                    snow.append(pygame.Rect(random.uniform(0,WIDTH*2),random.uniform(-400,0),5,5))
+
+            #pacing snow movement
+            if ani_count%20==0:
+                #moving each flake randomly within range across the y axis
+                for i in snow:
+                    i.y+=random.uniform(0,3)
+
+            #pacing snow movement
+            if ani_count%20==0:
+                #moving each flake randomly within range across the x axis
+                for i in snow:
+                    i.x-=random.uniform(0,5)
+
+            #drawing the sprite at the location is should be
+            WIN.blit(sprite_ani[ani_count//100],(sprite_at[0],sprite_at[1]))
+
+            #incrementing the count for animation and pacing
+            ani_count+=1
+
+            #moving the sprite gradually back as if dragged by wind
+            sprite_at[0]-=0.1
+
+            #resetting the count at a number that will keep things smooth
+            if ani_count>=799:
+                ani_count = 0
+
+            #game over and lose if the sprite goes too far off screen to the left
+            if sprite_at[0]<-50:
+                game_over("lose")
+
+            #game over and win if sprite goes enough off screen to the right
+            if sprite_at[0]>WIDTH-50:
+                game_over("win")
+
+            #updating the display while the loop runs
+            pygame.display.update()
+
+            #handling events
+            for event in pygame.event.get():
+                #quitting if exit button clicked
+                if event.type==pygame.QUIT:
+                    sys.exit()
+                    pygame.quit()
+                    
+                #moving the sprite forward/right when space pressed
+                if event.type==pygame.KEYDOWN:
+                    if event.key==pygame.K_SPACE:
+                        sprite_at[0]+=35
+
+#running the game
+if __name__=="__main__":
+    game("start")
